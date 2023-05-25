@@ -147,7 +147,7 @@
 
             if (weatherData.rain && weatherData.rain['3h']) {
                 const rainElement = document.createElement('p');
-                const rainChance = `${weatherData.rain['3h']} mm`;
+                const rainChance = `${Math.round(weatherData.rain['3h'] * 100)}%`;
                 rainElement.textContent = `降水確率: ${rainChance}`;
                 weatherElement.appendChild(rainElement);
             }
