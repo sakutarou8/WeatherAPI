@@ -1,0 +1,168 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>東京　天気予報API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: blue;
+        }
+
+        .weather-info {
+            max-width: 400px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin: 0;
+            margin-bottom: 5px;
+        }
+
+        .weather-icon {
+            width: 50px;
+            height: 50px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <h1>東京　天気予報API</h1>
+    <div id="weatherInfo"></div>
+
+    <script>
+        function weatherJapaneseConversion(name) {
+            switch (name) {
+                case 'Clear':
+                    return '晴れ';
+                case 'Clouds':
+                    return '曇り';
+                case 'Rain':
+                    return '雨';
+                case 'Snow':
+                    return '雪';
+                default:
+                    console.log(name);
+                    return name;
+            }
+        }
+
+        const apiKey = 'a910a05afad46141d134fd0a550580de';
+        const apiUrl = 'https://api.openweathermap.org/data/2.5/forecast';
+        const cityId = 'Tokyo, JP';
+
+        const currentDateTime = new Date();
+        // 東京の時間を取得
+        const currentDateTimeJP = new Date(currentDateTime.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+        const currentDate = formatDate(currentDateTimeJP);
+        const currentTime = currentDateTimeJP.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+        const requestUrl = `${apiUrl}?q=${cityId}&appid=${apiKey}&lang=ja&units=metric`;
+
+        fetch(requestUrl)
+            .then(response => response.json())
+            .then(data => {
+                displayWeatherInfo(data, currentDate, currentTime);
+            })
+            .catch(error => {
+                console.log('天気情報の取得に失敗しました:', error);
+            });
+
+        function displayWeatherInfo(data, currentDate, currentTime) {
+            const weatherInfoElement = document.getElementById('weatherInfo');
+
+            const currentWeather = data.list[0];
+            const currentWeatherElement = createWeatherElement(currentWeather, currentDate, currentTime);
+            weatherInfoElement.appendChild(currentWeatherElement);
+
+            for (let i = 8; i < data.list.length; i += 8) {
+                const forecast = data.list[i];
+                const forecastElement = createWeatherElement(forecast, null, null);
+                weatherInfoElement.appendChild(forecastElement);
+            }
+        }
+
+        function createWeatherElement(weatherData, date, time) {
+            const weatherElement = document.createElement('div');
+            weatherElement.classList.add('weather-info');
+
+            const dateElement = document.createElement('h2');
+            if (date) {
+                dateElement.textContent = date;
+            } else {
+                const forecastDateTime = new Date(weatherData.dt * 1000);
+                // 東京の時間を取得
+                const forecastDateTimeJP = new Date(forecastDateTime.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' })); 
+                const forecastDate = formatDate(forecastDateTimeJP);
+                dateElement.textContent = forecastDate;
+            }
+            weatherElement.appendChild(dateElement);
+
+            if (time) {
+                const timeElement = document.createElement('p');
+                timeElement.textContent = `時間: ${time}`;
+                weatherElement.appendChild(timeElement);
+            }
+
+            const weatherIconElement = document.createElement('img');
+            const weatherIcon = weatherData.weather[0].icon;
+            weatherIconElement.src = `http://openweathermap.org/img/wn/${weatherIcon}.png`;
+            weatherIconElement.alt = '天気アイコン';
+            weatherIconElement.classList.add('weather-icon');
+            weatherElement.appendChild(weatherIconElement);
+
+            const weatherDescriptionElement = document.createElement('p');
+            const weatherDescription = weatherJapaneseConversion(weatherData.weather[0].main);
+            weatherDescriptionElement.textContent = `天気: ${weatherDescription}`;
+            weatherElement.appendChild(weatherDescriptionElement);
+
+            if (date) {
+                const temperatureElement = document.createElement('p');
+                const temperatureText = `${Math.floor(weatherData.main.temp)} °C`;
+                temperatureElement.textContent = `気温: ${temperatureText}`;
+                weatherElement.appendChild(temperatureElement);
+            }
+
+            const humidityElement = document.createElement('p');
+            humidityElement.textContent = `湿度: ${weatherData.main.humidity} %`;
+            weatherElement.appendChild(humidityElement);
+
+            if (weatherData.rain && weatherData.rain['3h']) {
+                const rainElement = document.createElement('p');
+                const rainChance = `${weatherData.rain['3h']} mm`;
+                rainElement.textContent = `降水確率: ${rainChance}`;
+                weatherElement.appendChild(rainElement);
+            }
+
+            return weatherElement;
+        }
+
+        function formatDate(dateTime) {
+            const weekday = ['日', '月', '火', '水', '木', '金', '土'];
+            const month = String(dateTime.getMonth() + 1).padStart(2, '0');
+            const day = String(dateTime.getDate()).padStart(2, '0');
+            const weekdayIndex = dateTime.getDay();
+            const formattedDate = `${month}/${day} (${weekday[weekdayIndex]})`;
+            return formattedDate;
+        }
+    </script>
+</body>
+</html>
